@@ -926,7 +926,7 @@ namespace raspicam {
                 swap ( in_ptr[2],in_ptr[0] );
                 in_ptr+=3;
             }
-            mempcpy ( out_rgb,in_bgr,size );
+            memcpy ( out_rgb,in_bgr,size );
 
 
         }
