@@ -243,6 +243,62 @@ typedef struct {
 #undef VCOS_ASSERT_LOGGING_DISABLE
 #define VCOS_ASSERT_LOGGING_DISABLE 1
 
+#ifdef __APPLE__
+#if _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600
+// use deprecated sem_timedwait from the system
+#else
+
+typedef struct
+{
+    pthread_mutex_t count_lock;
+    pthread_cond_t  count_bump;
+    unsigned count;
+} bosal_sem_t;
+
+VCOS_INLINE_IMPL
+int sem_timedwait(sem_t *psem, const struct timespec *abstim)
+{
+   bosal_sem_t *pxsem;
+   int result, xresult;
+
+   if (! psem)
+   {
+      return EINVAL;
+   }
+   pxsem = (bosal_sem_t *)*psem;
+
+   result = pthread_mutex_lock(&pxsem->count_lock);
+   if (result)
+   {
+      return result;
+   }
+   xresult = 0;
+
+   if (pxsem->count == 0)
+   {
+      xresult = pthread_cond_timedwait(&pxsem->count_bump, &pxsem->count_lock, abstim);
+   }
+   if (! xresult)
+   {
+      if (pxsem->count > 0)
+      {
+         pxsem->count--;
+      }
+   }
+   result = pthread_mutex_unlock(&pxsem->count_lock);
+   if (result)
+   {
+      return result;
+   }
+   if (xresult)
+   {
+      errno = xresult;
+      return -1;
+   }
+   return 0;
+}
+#endif
+#endif  // __APPLE__
 
 /*
  * Counted Semaphores
