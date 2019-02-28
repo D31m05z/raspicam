@@ -10,6 +10,8 @@ SET(srcs_base ${srcs_base} private/fake_mmal_dependencies.cpp)
 endif()
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} )
 
+find_package(Threads REQUIRED)
+
 ADD_LIBRARY(${PROJECT_NAME} ${hdrs_base} ${srcs_base} )
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES 				# create *nix style library versions + symbolic links
 	DEFINE_SYMBOL DSO_EXPORTS
@@ -18,7 +20,7 @@ SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES 				# create *nix style library
 	CLEAN_DIRECT_OUTPUT 1 										# allow creating static and shared libs without conflicts
 	OUTPUT_NAME "${PROJECT_NAME}${PROJECT_DLLVERSION}" 	# avoid conflicts between library and binary target names
 )
-TARGET_LINK_LIBRARIES(${PROJECT_NAME}  ${REQUIRED_LIBRARIES}  )
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}  ${REQUIRED_LIBRARIES}  Threads::Threads)
 
 INSTALL(TARGETS ${PROJECT_NAME}
 	RUNTIME DESTINATION bin COMPONENT main
