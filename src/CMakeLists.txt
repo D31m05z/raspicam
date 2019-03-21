@@ -12,7 +12,11 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} )
 
 find_package(Threads REQUIRED)
 
-ADD_LIBRARY(${PROJECT_NAME} ${hdrs_base} ${srcs_base} )
+add_library(${PROJECT_NAME} ${hdrs_base} ${srcs_base} )
+add_library(::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX d)
+
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES 				# create *nix style library versions + symbolic links
 	DEFINE_SYMBOL DSO_EXPORTS
 	VERSION ${PROJECT_VERSION}
@@ -22,12 +26,18 @@ SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES 				# create *nix style library
 )
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}  ${REQUIRED_LIBRARIES}  Threads::Threads)
 
-INSTALL(TARGETS ${PROJECT_NAME}
-	RUNTIME DESTINATION bin COMPONENT main
-	LIBRARY DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE COMPONENT main
-	ARCHIVE DESTINATION lib COMPONENT main)
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
+
+configure_file(${PROJECT_NAME}-config.cmake.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-config.cmake @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-config.cmake DESTINATION lib/cmake/${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
+install(EXPORT ${PROJECT_NAME}-targets NAMESPACE :: DESTINATION lib/cmake/${PROJECT_NAME})
+
 #Add opencv component if required
-#Opencv Lib	
+#Opencv Lib
 IF (${OpenCV_FOUND})
 message(STATUS "Adding cv library")
 SET(hdrs_cv raspicam_cv.h raspicam_still_cv.h)
@@ -46,10 +56,9 @@ INSTALL(TARGETS ${PROJECT_NAME}_cv
 	LIBRARY DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE COMPONENT main
 	ARCHIVE DESTINATION lib COMPONENT main)
 ENDIF()
-	
-	
-#Installation of all header files	
+
+
+#Installation of all header files
 INSTALL(FILES ${public_hdrs_base} ${hdrs_cv}
 	DESTINATION include/${PROJECT_NAME}
 	COMPONENT main)
-
